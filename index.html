@@ -433,28 +433,6 @@ async function diagnose(id) {
   }
 }
 
-  try {
-    const response = await fetch(API_URL, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(p)
-    });
-
-    const data = await response.json();
-
-    if(!response.ok) throw new Error(data.error || "AIとの通信に失敗しました");
-
-    const result = document.createElement("div");
-    result.className = "result";
-    result.textContent = data.answer || "診断結果がありません。";
-    document.getElementById("aiContent").replaceChildren(result);
-
-  } catch(error) {
-    document.getElementById("aiContent").textContent =
-      "エラーが発生しました。\n" + error.message;
-  }
-}
-
 render();
 </script>
 </body>
