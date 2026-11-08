@@ -378,9 +378,11 @@ async function diagnose(id) {
 
     const interactionId = startData.interactionId;
 
-    if (!interactionId) {
-      throw new Error("診断IDを取得できませんでした");
-    }
+if (!interactionId) {
+  throw new Error(
+    "診断開始APIの返却内容：" + JSON.stringify(startData)
+  );
+}
 
     // 2. 5秒ごとに診断状況を確認
     const maxAttempts = 60;
