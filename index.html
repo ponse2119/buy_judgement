@@ -1,0 +1,363 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#fff7ed">
+<title>買う？待つ？ - お買い物アシスタント</title>
+<style>
+:root {
+  --orange:#ff895d;
+  --yellow:#ffcf70;
+  --pink:#ffe4df;
+  --bg:#fff8f2;
+  --text:#39332f;
+  --muted:#8b817b;
+  --white:#fff;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+}
+button,input,select,textarea { font:inherit; }
+button { cursor:pointer; }
+header {
+  padding:24px 20px 18px;
+  background:linear-gradient(135deg,#ffcf83,#ff9676);
+  border-radius:0 0 28px 28px;
+}
+.logo { font-size:23px;font-weight:900; }
+.subtitle { font-size:13px;margin-top:7px; }
+.container { max-width:650px;margin:auto;padding:18px 16px 90px; }
+.summary {
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  margin-top:-2px;
+}
+.summary-card {
+  background:white;border-radius:18px;padding:16px;
+  box-shadow:0 3px 12px #00000008;
+}
+.summary-card small { color:var(--muted); }
+.summary-card strong { display:block;font-size:23px;margin-top:7px; }
+.section-title {
+  font-size:17px;font-weight:800;margin:26px 0 13px;
+}
+.main-button {
+  width:100%;border:0;border-radius:15px;
+  padding:15px;background:var(--orange);color:white;
+  font-weight:800;font-size:15px;
+}
+.secondary-button {
+  border:0;border-radius:12px;padding:11px 15px;
+  background:#fff0e7;color:#d96c45;font-weight:700;
+}
+.product {
+  background:white;border-radius:18px;padding:15px;
+  margin-bottom:12px;
+  box-shadow:0 3px 12px #00000008;
+}
+.product-top { display:flex;justify-content:space-between;gap:10px; }
+.product-name { font-weight:800;font-size:16px; }
+.price { color:#e77950;font-weight:800;margin-top:7px; }
+.product-info { color:var(--muted);font-size:12px;margin-top:8px; }
+.actions { display:flex;gap:8px;margin-top:13px; }
+.actions button { flex:1; }
+.tag {
+  display:inline-block;border-radius:20px;
+  background:#fff0e7;color:#d96c45;
+  font-size:11px;padding:5px 9px;
+}
+.modal {
+  display:none;position:fixed;inset:0;background:#0007;
+  z-index:10;align-items:flex-end;justify-content:center;
+}
+.modal.show { display:flex; }
+.modal-content {
+  background:var(--bg);width:100%;max-width:650px;
+  max-height:90vh;overflow:auto;
+  border-radius:24px 24px 0 0;padding:22px 18px 35px;
+}
+.field { margin:15px 0; }
+.field label { display:block;font-size:13px;font-weight:700;margin-bottom:7px; }
+.field input,.field select,.field textarea {
+  width:100%;padding:13px;border:1px solid #eaded5;
+  border-radius:12px;background:white;color:var(--text);
+}
+.field textarea { min-height:75px;resize:vertical; }
+.close { float:right;border:0;background:none;font-size:22px; }
+.result {
+  background:white;border-radius:18px;padding:17px;
+  margin-top:15px;white-space:pre-wrap;line-height:1.8;
+}
+.loading { text-align:center;padding:25px;color:var(--muted); }
+.empty { text-align:center;padding:35px 10px;color:var(--muted); }
+.footer { text-align:center;color:var(--muted);font-size:11px;margin-top:35px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🛍️ 買う？待つ？</div>
+  <div class="subtitle">お買い物の迷いをAIと一緒に解決しよう！</div>
+</header>
+
+<main class="container">
+
+  <div class="summary">
+    <div class="summary-card">
+      <small>欲しいもの</small>
+      <strong id="count">0件</strong>
+    </div>
+    <div class="summary-card">
+      <small>欲しいものの合計</small>
+      <strong id="total">¥0</strong>
+    </div>
+  </div>
+
+  <div class="section-title">✨ 欲しいものリスト</div>
+  <button class="main-button" onclick="openModal()">
+    ＋ 欲しいものを登録する
+  </button>
+
+  <div id="products" style="margin-top:17px"></div>
+
+  <div class="footer">
+    買い物の判断をサポートするアプリです。<br>
+    AIの診断は参考情報としてご利用ください。
+  </div>
+</main>
+
+<!-- 商品登録モーダル -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <button class="close" onclick="closeModal()">×</button>
+    <h2>欲しいものを登録 🎁</h2>
+
+    <div class="field">
+      <label>商品名 *</label>
+      <input id="name" placeholder="例：ワイヤレスイヤホン">
+    </div>
+
+    <div class="field">
+      <label>価格（円） *</label>
+      <input id="price" type="number" min="0" placeholder="30000">
+    </div>
+
+    <div class="field">
+      <label>ジャンル</label>
+      <select id="category">
+        <option>家電</option>
+        <option>ゲーム</option>
+        <option>ファッション</option>
+        <option>日用品</option>
+        <option>趣味</option>
+        <option>その他</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>欲しい理由</label>
+      <textarea id="reason" placeholder="なぜ欲しい？"></textarea>
+    </div>
+
+    <div class="field">
+      <label>使用頻度</label>
+      <select id="frequency">
+        <option>毎日</option>
+        <option>週に数回</option>
+        <option>月に数回</option>
+        <option>たまに</option>
+        <option>まだ分からない</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>購入の緊急度</label>
+      <select id="urgency">
+        <option>今すぐ欲しい</option>
+        <option>そのうち欲しい</option>
+        <option>急いでいない</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>予算（任意・円）</label>
+      <input id="budget" type="number" min="0" placeholder="50000">
+    </div>
+
+    <button class="main-button" onclick="addProduct()">登録する</button>
+  </div>
+</div>
+
+<!-- AI診断モーダル -->
+<div class="modal" id="aiModal">
+  <div class="modal-content">
+    <button class="close" onclick="closeAI()">×</button>
+    <h2>🤖 AI購入診断</h2>
+    <div id="aiContent">
+      <div class="loading">AIが考えています...</div>
+    </div>
+    <button class="secondary-button" style="width:100%;margin-top:15px"
+      onclick="closeAI()">閉じる</button>
+  </div>
+</div>
+
+<script>
+// Cloudflare WorkersのURLを設定する
+const API_URL = "ここにCloudflare WorkersのURLを設定";
+
+let products = JSON.parse(localStorage.getItem("shoppingProducts") || "[]");
+
+function save() {
+  localStorage.setItem("shoppingProducts", JSON.stringify(products));
+  render();
+}
+
+function yen(value) {
+  return "¥" + Number(value).toLocaleString("ja-JP");
+}
+
+function render() {
+  const active = products.filter(p => !p.purchased);
+  document.getElementById("count").textContent = active.length + "件";
+
+  const total = active.reduce((sum,p) => sum + Number(p.price),0);
+  document.getElementById("total").textContent = yen(total);
+
+  const area = document.getElementById("products");
+
+  if(products.length === 0) {
+    area.innerHTML = '<div class="empty">まだ登録がないよ！<br>欲しいものを追加してみよう 🎁</div>';
+    return;
+  }
+
+  area.innerHTML = products.map(p => `
+    <div class="product">
+      <div class="product-top">
+        <div>
+          <div class="product-name">${escapeHTML(p.name)}</div>
+          <div class="price">${yen(p.price)}</div>
+        </div>
+        <span class="tag">${p.purchased ? "購入済み" : escapeHTML(p.category)}</span>
+      </div>
+      <div class="product-info">
+        使用頻度：${escapeHTML(p.frequency)}
+      </div>
+      <div class="product-info">
+        ${escapeHTML(p.reason || "理由の登録なし")}
+      </div>
+      <div class="actions">
+        ${!p.purchased ? `<button class="secondary-button" onclick="diagnose('${p.id}')">🤖 AI診断</button>
+        <button class="secondary-button" onclick="markPurchased('${p.id}')">購入した</button>` : ""}
+        <button class="secondary-button" onclick="removeProduct('${p.id}')">削除</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+function openModal() {
+  document.getElementById("modal").classList.add("show");
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.remove("show");
+}
+
+function closeAI() {
+  document.getElementById("aiModal").classList.remove("show");
+}
+
+function addProduct() {
+  const name = document.getElementById("name").value.trim();
+  const price = Number(document.getElementById("price").value);
+
+  if(!name || !Number.isFinite(price) || price < 0) {
+    alert("商品名と正しい価格を入力してね！");
+    return;
+  }
+
+  products.unshift({
+    id: Date.now().toString(),
+    name,
+    price,
+    category: document.getElementById("category").value,
+    reason: document.getElementById("reason").value.trim(),
+    frequency: document.getElementById("frequency").value,
+    urgency: document.getElementById("urgency").value,
+    budget: Number(document.getElementById("budget").value) || null,
+    purchased:false
+  });
+
+  save();
+  closeModal();
+
+  ["name","price","reason","budget"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+}
+
+function removeProduct(id) {
+  if(!confirm("この商品を削除する？")) return;
+  products = products.filter(p => p.id !== id);
+  save();
+}
+
+function markPurchased(id) {
+  const p = products.find(p => p.id === id);
+  if(!p) return;
+  if(!confirm(p.name + "を購入済みにする？")) return;
+  p.purchased = true;
+  save();
+}
+
+async function diagnose(id) {
+  const p = products.find(p => p.id === id);
+  if(!p) return;
+
+  document.getElementById("aiModal").classList.add("show");
+  document.getElementById("aiContent").innerHTML =
+    '<div class="loading">🤖 AIが購入するべきか考えています...<br>少し待ってね！</div>';
+
+  if(API_URL.startsWith("ここに")) {
+    document.getElementById("aiContent").textContent =
+      "AIの接続設定がまだ完了していません。Cloudflare Workersの設定後に利用できます。";
+    return;
+  }
+
+  try {
+    const response = await fetch(API_URL, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(p)
+    });
+
+    const data = await response.json();
+
+    if(!response.ok) throw new Error(data.error || "AIとの通信に失敗しました");
+
+    const result = document.createElement("div");
+    result.className = "result";
+    result.textContent = data.answer || "診断結果がありません。";
+    document.getElementById("aiContent").replaceChildren(result);
+
+  } catch(error) {
+    document.getElementById("aiContent").textContent =
+      "エラーが発生しました。\n" + error.message;
+  }
+}
+
+render();
+</script>
+</body>
+</html>
